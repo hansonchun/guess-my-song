@@ -1,3 +1,4 @@
+import { Button } from '@fluentui/react-components';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -14,7 +15,7 @@ const Logout: React.FC = () => {
     navigate('/');  // This will redirect to the login page
   };
 
-  return <button onClick={handleLogout}>Logout</button>;
+  return <Button onClick={handleLogout}>Logout</Button>;
 };
 
 export default Logout;

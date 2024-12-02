@@ -1,31 +1,9 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import Login from './Login';
-import Dashboard from './Dashboard';
-
-// This component will be used to handle the callback logic
-const CallbackHandler: React.FC = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const error = searchParams.get('error');
-
-    if (error) {
-      console.error('Spotify auth error:', error);
-      navigate('/');
-    } else {
-      const access_token = searchParams.get('access_token');
-      const refresh_token = searchParams.get('refresh_token');
-      // Here you might want to dispatch these tokens to a state management solution or store them securely
-      console.log('Logged in:', access_token, refresh_token);
-      navigate('/dashboard');
-    }
-  }, [location, navigate]);
-
-  return <div>Processing login...</div>;
-};
+import { BrowserRouter as Router, Route, Routes, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import Login from './components/Login';
+import Dashboard from './pages/Dashboard';
+import ProtectedRoute from './components/ProtectedRoute';
+import CallbackHandler from './components/CallbackHandler';
 
 const App: React.FC = () => {
   return (
@@ -33,8 +11,9 @@ const App: React.FC = () => {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/callback" element={<CallbackHandler />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        {/* Add any other routes */}
+        <Route  path="/dashboard" element={<Dashboard />} />
+        {/* Add any other routes that need protection with ProtectedRoute */}
+        <Route path="*" element={<Navigate to="/" replace />} /> {/* Catch all route */}
       </Routes>
     </Router>
   );

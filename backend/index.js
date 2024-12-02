@@ -10,6 +10,6 @@ app.use(cookieParser());
 app.use(express.json());
 
 app.get('/auth/login', authController.login);
-app.get('/callback', authController.callback);
+app.get('/auth/tokens', authController.tokens);
 
 app.listen(5000, () => console.log('Listening on 5000'));
