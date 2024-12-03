@@ -41,27 +41,42 @@ const Dashboard: React.FC = () => {
     const handleCreatePlaylist = async (event: React.FormEvent) => {
         event.preventDefault();
         try {
-            const response = await axios.post('/api/playlists/create', {
+            // Create the playlist first
+            const playlistResponse = await axios.post('/api/playlists/create', {
                 name: 'Guess My Song',
                 description: `Guess My Song Game - Hosted by ${userProfile?.display_name}`,
                 hostId: userProfile?.id,
-                hostName: userProfile?.display_name,
                 public: false, // Adjust based on your game rules
                 collaborative: true // Since others will add songs
             });
 
-            if (response.data.playlist && response.data.sessionId) {
-                // Navigate to game setup with session details
-                navigate(`/game-setup/${response.data.sessionId}`, {
-                    state: { playlistId: response.data.playlist.id }
+            if (playlistResponse.data.playlist) {
+                const { id: playlistId, name: playlistName } = playlistResponse.data.playlist;
+
+                // Now create the game session with the playlist information
+                const gameSessionResponse = await axios.post('/api/game-sessions/create', {
+                    hostId: userProfile?.id,
+                    hostName: userProfile?.display_name,
+                    playlistId: playlistId,
+                    playlistName: playlistName
                 });
+
+                if (gameSessionResponse.data.gameSessionId) {
+                    navigate(`/game-setup/${gameSessionResponse.data.gameSessionId}`, {
+                        state: { playlistId: playlistId }
+                    })
+                } else {
+                    throw new Error('Game session creation failed');
+                }
+
+            } else {
+                throw new Error('Playlist creation failed');
             }
         } catch (error) {
-            console.error('Error creating playlist:', error);
+            console.error('Error creating playlist or game session:', error);
             // Handle error (e.g., show user feedback)
         }
     };
-
 
     return (
         <div>

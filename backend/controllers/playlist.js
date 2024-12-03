@@ -9,7 +9,7 @@ const playlistController = {
         }
 
         try {
-            const { name, description = '', hostId, hostName, public = false, collaborative = false } = req.body;
+            const { name, description = '', hostId, public = false, collaborative = false } = req.body;
             const playlistName = `${name} (${generateRandomSuffix()})`;
 
             const response = await fetch(`https://api.spotify.com/v1/users/${hostId}/playlists`, {
@@ -31,17 +31,9 @@ const playlistController = {
             }
 
             const playlistData = await response.json();
-            const session = await gameSessionController.createGameSession(
-                hostId,
-                hostName,
-                playlistData.id,
-                playlistName
-            );
             res.json({
                 message: 'Playlist created',
-                playlist: playlistData,
-                sessionId: session.gameSessionId,
-                inviteLink: session.inviteLink
+                playlist: playlistData
             });
 
         } catch (error) {

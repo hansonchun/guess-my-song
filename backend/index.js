@@ -26,9 +26,8 @@ app.post('/api/playlists/create', playlistController.createPlaylist);
 app.post('/api/playlists/:playlistId/tracks', playlistController.addTracksToPlaylist)
 
 // gameSession routes
-app.get('/api/game-sessions/:sessionId', gameSessionController.fetchGameSession);
+app.post('/api/game-sessions/create', gameSessionController.createGameSession);
 app.post('/api/game-sessions/:gameSessionId/join', gameSessionController.joinGameSession);
-
-
+app.get('/api/game-sessions/:sessionId', gameSessionController.fetchGameSession);
 
 app.listen(5000, () => console.log('Listening on 5000'));

@@ -1,16 +1,18 @@
 const { admin, db } = require('../firebase');
 
 const gameSessionController = {
-    createGameSession: async (hostId, hostName, playlistId, playlistName) => {
+    createGameSession: async (req, res) => {
         try {
+            const { hostId, hostName, playlistId, playlistName } = req.body;
+
             const gameSessionRef = await db.collection('gameSessions').add({
                 hostId: hostId,
                 playlistName: playlistName,
                 playlistId: playlistId,
                 status: 'waiting',
                 users: {
-                    [hostId]: { 
-                        displayName: hostName, 
+                    [hostId]: {
+                        displayName: hostName,
                         joinedAt: admin.firestore.FieldValue.serverTimestamp(),
                         score: 0
                     }
@@ -33,20 +35,18 @@ const gameSessionController = {
                     gameSessions: [gameSessionId]
                 });
             } else {
-                console.log('creating users table with host');
                 // If the host already exists, add the game session to their list
                 await hostRef.update({
                     gameSessions: admin.firestore.FieldValue.arrayUnion(gameSessionId)
                 });
             }
 
-            return { gameSessionId, inviteLink };
+            res.json({ gameSessionId, inviteLink });
         }
         catch (error) {
             console.error('Error creating game session:', error);
             throw error;
         }
-
     },
     joinGameSession: async (req, res) => {
         const { gameSessionId } = req.params;
