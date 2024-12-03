@@ -1,26 +1,31 @@
 const { admin, db } = require('../firebase');
 
 const gameSessionController = {
-    createGameSession: async (hostId, playlistId) => {
+    createGameSession: async (hostId, hostName, playlistId, playlistName) => {
         try {
             const gameSessionRef = await db.collection('gameSessions').add({
                 hostId: hostId,
+                playlistName: playlistName,
                 playlistId: playlistId,
                 status: 'waiting',
-                players: {
-                    [hostId]: { joinedAt: admin.firestore.FieldValue.serverTimestamp() }
+                users: {
+                    [hostId]: { 
+                        displayName: hostName, 
+                        joinedAt: admin.firestore.FieldValue.serverTimestamp(),
+                        score: 0
+                    }
                 },
                 createdAt: admin.firestore.FieldValue.serverTimestamp(),
                 inviteLink: ''
             })
 
             const gameSessionId = gameSessionRef.id;
-            const inviteLink = `${process.env.FRONTEND_URL}/join-game/${gameSessionId}`;
+            const inviteLink = `join-game/${gameSessionId}`;
 
             await gameSessionRef.update({ inviteLink: inviteLink });
 
-            // Check if the host exists in the players collection, if not, create them
-            const hostRef = db.collection('players').doc(hostId);
+            // Check if the host exists in the users collection, if not, create them
+            const hostRef = db.collection('users').doc(hostId);
             const hostDoc = await hostRef.get();
 
             if (!hostDoc.exists) {
@@ -28,7 +33,7 @@ const gameSessionController = {
                     gameSessions: [gameSessionId]
                 });
             } else {
-                console.log('creating players table with host');
+                console.log('creating users table with host');
                 // If the host already exists, add the game session to their list
                 await hostRef.update({
                     gameSessions: admin.firestore.FieldValue.arrayUnion(gameSessionId)
@@ -49,21 +54,21 @@ const gameSessionController = {
 
         try {
             const gameSessionRef = db.collection('gameSessions').doc(gameSessionId);
-            const playerRef = db.collection('players').doc(userId);
+            const userRef = db.collection('users').doc(userId);
 
-            // Check if both game session and player exist
-            const [gameSessionSnap, playerSnap] = await Promise.all([
+            // Check if both game session and user exist
+            const [gameSessionSnap, userSnap] = await Promise.all([
                 gameSessionRef.get(),
-                playerRef.get()
+                userRef.get()
             ]);
 
             if (!gameSessionSnap.exists) {
                 return res.status(404).json({ error: 'Game session not found' });
             }
 
-            if (!playerSnap.exists) {
-                // Optionally create a player document if it doesn't exist
-                await playerRef.set({ gameSessions: [] });
+            if (!userSnap.exists) {
+                // Optionally create a user document if it doesn't exist
+                await userRef.set({ gameSessions: [] });
             }
 
             // Check game status
@@ -71,17 +76,17 @@ const gameSessionController = {
                 return res.status(400).json({ error: 'Game has already started or is not joinable' });
             }
 
-            // Add player to game session
+            // Add user to game session
             await gameSessionRef.update({
-                players: {
+                users: {
                     [userId]: {
                         joinedAt: admin.firestore.FieldValue.serverTimestamp()
                     }
                 }
             }, { merge: true });
 
-            // Add game session to player's list of sessions
-            await playerRef.update({
+            // Add game session to user's list of sessions
+            await userRef.update({
                 gameSessions: admin.firestore.FieldValue.arrayUnion(gameSessionId)
             });
 
@@ -89,35 +94,6 @@ const gameSessionController = {
         } catch (error) {
             console.error('Error joining game:', error);
             res.status(500).json({ error: 'Failed to join game' });
-        }
-    },
-    fetchPlayerGames: async (req, res) => {
-        const playerId = req.params.playerId;
-
-        try {
-            const playerRef = db.collection('players').doc(playerId);
-            const playerDoc = await playerRef.get();
-    
-            if (!playerDoc.exists) {
-                // Instead of returning an error, create the player document
-                await playerRef.set({
-                    gameSessions: []
-                });
-                return res.status(200).json([]); // Return an empty array if no games exist yet
-            }
-    
-            const gameSessionsIds = playerDoc.data().gameSessions || [];
-    
-            // Fetch detailed information about each game session
-            const gameSessionsRefs = gameSessionsIds.map(id => db.collection('gameSessions').doc(id));
-            const gameSessions = await admin.firestore().getAll(...gameSessionsRefs);
-    
-            const playerGames = gameSessions.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-            res.json(playerGames); // This will be an array of game sessions or an empty array
-        } catch (error) {
-            console.error('Error fetching player games:', error);
-            res.status(500).json({ error: 'Failed to fetch player games' });
         }
     },
     fetchGameSession: async (req, res) => {
@@ -151,7 +127,6 @@ const gameSessionController = {
             res.status(500).json({ error: 'Failed to fetch game session' });
         }
     },
-    // Add other session-related methods here, like joinSession, getSessionInfo, etc.
 };
 
 module.exports = gameSessionController;

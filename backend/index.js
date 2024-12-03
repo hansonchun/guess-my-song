@@ -17,7 +17,9 @@ app.get('/auth/login', authController.login);
 app.get('/auth/tokens', authController.tokens);
 
 // user routes
-app.get('/api/user-profile', userController.getUserProfile);
+app.get('/api/users/current-user-profile', userController.getCurrentUserProfile);
+app.get('/api/users/user-profile/:userId', userController.getUserProfile);
+app.get('/api/users/:userId/games', userController.fetchUserGames);
 
 // playlist routes
 app.post('/api/playlists/create', playlistController.createPlaylist);
@@ -27,7 +29,6 @@ app.post('/api/playlists/:playlistId/tracks', playlistController.addTracksToPlay
 app.get('/api/game-sessions/:sessionId', gameSessionController.fetchGameSession);
 app.post('/api/game-sessions/:gameSessionId/join', gameSessionController.joinGameSession);
 
-// player routes
-app.get('/api/players/:playerId/games', gameSessionController.fetchPlayerGames);
+
 
 app.listen(5000, () => console.log('Listening on 5000'));

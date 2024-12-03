@@ -10,13 +10,13 @@ const Dashboard: React.FC = () => {
     const { userProfile, setUserProfile } = useUserProfile();
     const navigate = useNavigate();
 
-    const [playerGames, setPlayerGames] = useState<any[]>([]);
+    const [userGames, setUserGames] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchData = async () => {
             if (!userProfile) {
                 try {
-                    const response = await axios.get<SpotifyUserProfile>('/api/user-profile', { withCredentials: true });
+                    const response = await axios.get<SpotifyUserProfile>('/api/users/current-user-profile', { withCredentials: true });
                     setUserProfile(response.data);
                 } catch (error) {
                     console.error('Failed to fetch user profile:', error);
@@ -26,8 +26,8 @@ const Dashboard: React.FC = () => {
 
             if (userProfile && userProfile.id) {
                 try {
-                    const response = await axios.get(`/api/players/${userProfile.id}/games`);
-                    setPlayerGames(response.data);
+                    const response = await axios.get(`/api/users/${userProfile.id}/games`);
+                    setUserGames(response.data);
                 } catch (error) {
                     console.error('Failed to fetch player games:', error);
                     // Handle error here
@@ -44,7 +44,8 @@ const Dashboard: React.FC = () => {
             const response = await axios.post('/api/playlists/create', {
                 name: 'Guess My Song',
                 description: `Guess My Song Game - Hosted by ${userProfile?.display_name}`,
-                userId: userProfile?.id,
+                hostId: userProfile?.id,
+                hostName: userProfile?.display_name,
                 public: false, // Adjust based on your game rules
                 collaborative: true // Since others will add songs
             });
@@ -68,7 +69,7 @@ const Dashboard: React.FC = () => {
             <h2>{userProfile?.display_name}'s Dashboard</h2>
             <h2>Your Games</h2>
             <ul>
-                {playerGames.map(game => (
+                {userGames.map(game => (
                     <li key={game.id}>
                         <Link to={game.status === 'waiting' ? `/game-setup/${game.id}` : `/game-play/${game.id}`}>
                             Game ID: {game.id}, Status: {game.status}

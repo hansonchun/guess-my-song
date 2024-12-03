@@ -19,20 +19,6 @@ const UserProfileContext = createContext<UserContextType | undefined>(undefined)
 export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ children }) => {
   const [userProfile, setUserProfile] = useState<SpotifyUserProfile | null>(null);
 
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const response = await axios.get<SpotifyUserProfile>('/api/user-profile', { withCredentials: true });
-        setUserProfile(response.data);
-      } catch (error) {
-        console.error('Failed to fetch user profile:', error);
-        // Handle error
-      }
-    };
-
-    fetchUserProfile();
-  }, []);
-
   return (
     <UserProfileContext.Provider value={{ userProfile, setUserProfile }}>
       {children}
