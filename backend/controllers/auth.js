@@ -1,8 +1,5 @@
-const dotenv = require('dotenv');
 const fetch = require('node-fetch');
 const querystring = require('querystring');
-
-dotenv.config();
 
 function generateRandomString(length) {
   let text = '';

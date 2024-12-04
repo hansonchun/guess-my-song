@@ -6,7 +6,8 @@ import CallbackHandler from './components/CallbackHandler';
 import { UserProfileProvider } from './context/UserProfileContext';
 import { GameSessionProvider } from './context/GameSessionContext';
 import GameSetup from './pages/GameSetup';
-import GamePlay from './pages/GamePlay';
+import SongSelection from './pages/SongSelection';
+import GuessPhase from './pages/GuessPhase';
 
 const App: React.FC = () => {
   return (
@@ -18,7 +19,8 @@ const App: React.FC = () => {
             <Route path="/callback" element={<CallbackHandler />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/game-setup/:sessionId" element={<GameSetup />} />
-            <Route path="/game-play/:sessionId" element={<GamePlay />} />
+            <Route path="/song-selection/:sessionId" element={<SongSelection />} />
+            <Route path="/guess-phase/:sessionId" element={<GuessPhase />}/>
             <Route path="*" element={<Navigate to="/" replace />} /> {/* Catch all route */}
           </Routes>
         </Router>

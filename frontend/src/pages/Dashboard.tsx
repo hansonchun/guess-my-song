@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useUserProfile } from '../context/UserProfileContext';
 import Logout from '../components/Logout';
 import axios from 'axios';
-import { SpotifyUserProfile } from '../models/UserProfile';
+import { SpotifyUserProfile } from '../models/SpotifyUserProfile';
 import { Button } from '@fluentui/react-components';
 import { Link, useNavigate } from 'react-router-dom';
+import { GameSession } from '../models/GameSession';
 
 const Dashboard: React.FC = () => {
     const { userProfile, setUserProfile } = useUserProfile();
@@ -78,6 +79,30 @@ const Dashboard: React.FC = () => {
         }
     };
 
+    const getGameLink = (game: any) => { // Use 'any' since the exact structure isn't known
+        if (game.status === 'waiting') {
+            return `/game-setup/${game.id}`;
+        }
+    
+        // Ensure userProfile is defined and has an id
+        const userId = userProfile?.id;
+        if (!userId) {
+            console.error('User ID not found');
+            return '/some-error-page'; // or handle as needed
+        }
+    
+        // Access the user by their ID, assuming users is an object with string keys
+        const user = game.users[userId];
+    
+        if (user && user.addedTrackId) {
+            // If the user has an addedTrackId, they've added a track, so go to guess phase
+            return `/guess-phase/${game.id}`;
+        } else {
+            // Otherwise, they need to select a song
+            return `/song-selection/${game.id}`;
+        }
+    };
+
     return (
         <div>
             <h1>Guess My Song</h1>
@@ -86,7 +111,7 @@ const Dashboard: React.FC = () => {
             <ul>
                 {userGames.map(game => (
                     <li key={game.id}>
-                        <Link to={game.status === 'waiting' ? `/game-setup/${game.id}` : `/game-play/${game.id}`}>
+                        <Link to={getGameLink(game)}>
                             Game ID: {game.id}, Status: {game.status}
                         </Link>
                     </li>

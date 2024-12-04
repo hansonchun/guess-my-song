@@ -2,7 +2,7 @@
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import axios from 'axios';
-import { SpotifyUserProfile } from '../models/UserProfile';
+import { SpotifyUserProfile } from '../models/SpotifyUserProfile';
 
 interface UserContextType {
   userProfile: SpotifyUserProfile | null;

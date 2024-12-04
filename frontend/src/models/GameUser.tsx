@@ -4,4 +4,5 @@ export interface GameUser {
     joinedAt: string,
     score: number,
     avatar: string,
+    addedTrackId: string | null,
 }

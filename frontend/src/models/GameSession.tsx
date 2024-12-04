@@ -1,6 +1,7 @@
 import { GameUser } from "./GameUser";
 
 export interface GameSession {
+    id: string | undefined;
     createdAt: string;
     hostId: string;
     inviteLink: string;
@@ -8,4 +9,5 @@ export interface GameSession {
     playlistId: string;
     playlistName: string;
     status: string;
+    currentSongToGuess: string;
   }

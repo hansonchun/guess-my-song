@@ -1,16 +1,22 @@
 const express = require('express');
+const http = require('http');
 const app = express();
+const server = http.createServer(app);
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const { setupWebSocket } = require('./websocket');
+const dotenv = require('dotenv');
+dotenv.config();
+
+app.use(cors());
+app.use(cookieParser());
+app.use(express.json());
 
 const authController = require('./controllers/auth');
 const userController = require('./controllers/user');
 const playlistController = require('./controllers/playlist');
 const gameSessionController = require('./controllers/gameSession');
-
-app.use(cors());
-app.use(cookieParser());
-app.use(express.json());
+const searchController = require('./controllers/search');
 
 // auth routes
 app.get('/auth/login', authController.login);
@@ -23,11 +29,20 @@ app.get('/api/users/:userId/games', userController.fetchUserGames);
 
 // playlist routes
 app.post('/api/playlists/create', playlistController.createPlaylist);
-app.post('/api/playlists/:playlistId/tracks', playlistController.addTracksToPlaylist)
+app.post('/api/playlists/:playlistId/add', playlistController.addSongToPlaylist);
 
 // gameSession routes
-app.post('/api/game-sessions/create', gameSessionController.createGameSession);
-app.post('/api/game-sessions/:gameSessionId/join', gameSessionController.joinGameSession);
 app.get('/api/game-sessions/:sessionId', gameSessionController.fetchGameSession);
+app.post('/api/game-sessions/create', gameSessionController.createGameSession);
+app.post('/api/game-sessions/:sessionId/join', gameSessionController.joinGameSession);
+app.post('/api/game-sessions/:sessionId/start', gameSessionController.startGameSession);
 
-app.listen(5000, () => console.log('Listening on 5000'));
+// search routes
+app.get('/api/search', searchController.searchSongs);
+
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+    console.log(`Server listening on ${PORT}`); 
+    console.log("Setting up WebSocket server...");
+    setupWebSocket();
+});

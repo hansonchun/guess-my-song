@@ -10,13 +10,15 @@ const GameSessionContext = createContext<GameSessionContextType | undefined>(und
 
 export const GameSessionProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [gameSession, setGameSession] = useState<GameSession>({
+    id: '',
     createdAt: '',
     hostId: '',
     inviteLink: '',
     users: [],
     playlistId: '',
     playlistName: '',
-    status: ''
+    status: '',
+    currentSongToGuess: ''
   });
 
   return (

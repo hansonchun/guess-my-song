@@ -14,11 +14,14 @@ const gameSessionController = {
                     [hostId]: {
                         displayName: hostName,
                         joinedAt: admin.firestore.FieldValue.serverTimestamp(),
-                        score: 0
+                        score: 0,
+                        addedTrackId: '',
                     }
                 },
                 createdAt: admin.firestore.FieldValue.serverTimestamp(),
-                inviteLink: ''
+                inviteLink: '',
+                addedSongs: [],
+                currentSongToGuess: ''
             })
 
             const gameSessionId = gameSessionRef.id;
@@ -49,11 +52,11 @@ const gameSessionController = {
         }
     },
     joinGameSession: async (req, res) => {
-        const { gameSessionId } = req.params;
+        const { sessionId } = req.params;
         const { userId } = req.query;
 
         try {
-            const gameSessionRef = db.collection('gameSessions').doc(gameSessionId);
+            const gameSessionRef = db.collection('gameSessions').doc(sessionId);
             const userRef = db.collection('users').doc(userId);
 
             // Check if both game session and user exist
@@ -87,7 +90,7 @@ const gameSessionController = {
 
             // Add game session to user's list of sessions
             await userRef.update({
-                gameSessions: admin.firestore.FieldValue.arrayUnion(gameSessionId)
+                gameSessions: admin.firestore.FieldValue.arrayUnion(sessionId)
             });
 
             res.json({ message: 'Successfully joined the game', sessionId: gameSessionSnap.id });
@@ -127,6 +130,36 @@ const gameSessionController = {
             res.status(500).json({ error: 'Failed to fetch game session' });
         }
     },
+    startGameSession: async(req, res) => {
+        const { sessionId } = req.params
+
+        try {
+            const gameSessionRef = db.collection('gameSessions').doc(sessionId);
+            const gameSessionDoc = await gameSessionRef.get();
+
+            if (!gameSessionDoc.exists) {
+                return res.status(404).json({ error: 'Game session not found' });
+            }
+
+            const gameSessionData = gameSessionDoc.data();
+
+            // Check if the game can be started
+            if (gameSessionData.status !== 'waiting') {
+                return res.status(400).json({ error: 'Game is not in waiting status' });
+            }
+
+            // Update the game session status to 'started'
+            await gameSessionRef.update({
+                status: 'started',
+                startedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+
+            res.json({ message: 'Game session started', status: 'started' });
+        } catch (error) {
+            console.error('Error starting game session:', error);
+            res.status(500).json({ error: 'Failed to start game session' });
+        }
+    }
 };
 
 module.exports = gameSessionController;
