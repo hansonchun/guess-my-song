@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { useUserProfile } from '../context/UserProfileContext';
 import Logout from '../components/Logout';
 import axios from 'axios';
-import { SpotifyUserProfile } from '../models/SpotifyUserProfile';
 import { Button } from '@fluentui/react-components';
 import { Link, useNavigate } from 'react-router-dom';
-import { GameSession } from '../models/GameSession';
+import useUserProfileFetch from '../hooks/useUserProfileFetch';
 
 const Dashboard: React.FC = () => {
-    const { userProfile, setUserProfile } = useUserProfile();
+    const { userProfile, fetchUserProfile, isLoading, error } = useUserProfileFetch();
     const navigate = useNavigate();
 
     const [userGames, setUserGames] = useState<any[]>([]);
@@ -16,15 +14,8 @@ const Dashboard: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             if (!userProfile) {
-                try {
-                    const response = await axios.get<SpotifyUserProfile>('/api/users/current-user-profile', { withCredentials: true });
-                    setUserProfile(response.data);
-                } catch (error) {
-                    console.error('Failed to fetch user profile:', error);
-                    // Handle error, maybe redirect to login if unauthorized
-                }
+                fetchUserProfile();
             }
-
             if (userProfile && userProfile.id) {
                 try {
                     const response = await axios.get(`/api/users/${userProfile.id}/games`);
@@ -35,9 +26,8 @@ const Dashboard: React.FC = () => {
                 }
             }
         };
-
         fetchData();
-    }, [userProfile, setUserProfile]);
+    }, [userProfile, navigate]);
 
     const handleCreatePlaylist = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -94,6 +84,10 @@ const Dashboard: React.FC = () => {
         // Access the user by their ID, assuming users is an object with string keys
         const user = game.users[userId];
     
+        if (game.status === 'complete') {
+            return `/scoreboard/${game.id}`;
+        }    
+
         if (user && user.addedTrackId) {
             // If the user has an addedTrackId, they've added a track, so go to guess phase
             return `/guess-phase/${game.id}`;

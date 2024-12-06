@@ -85,7 +85,7 @@ const playlistController = {
             // Update Firestore with the song URI for the user and add to addedSongs array
             const updateData = {
                 [`users.${userId}.addedTrackId`]: trackId,
-                addedSongs: admin.firestore.FieldValue.arrayUnion(trackId)
+                addedSongs: admin.firestore.FieldValue.arrayUnion(trackId),
             };
     
             await gameSessionRef.update(updateData);

@@ -17,6 +17,7 @@ const userController = require('./controllers/user');
 const playlistController = require('./controllers/playlist');
 const gameSessionController = require('./controllers/gameSession');
 const searchController = require('./controllers/search');
+const gameController = require('./controllers/game');
 
 // auth routes
 app.get('/auth/login', authController.login);
@@ -36,6 +37,9 @@ app.get('/api/game-sessions/:sessionId', gameSessionController.fetchGameSession)
 app.post('/api/game-sessions/create', gameSessionController.createGameSession);
 app.post('/api/game-sessions/:sessionId/join', gameSessionController.joinGameSession);
 app.post('/api/game-sessions/:sessionId/start', gameSessionController.startGameSession);
+
+// game routes
+app.post('/api/game/:sessionId/guess', gameController.makeGuess);
 
 // search routes
 app.get('/api/search', searchController.searchSongs);

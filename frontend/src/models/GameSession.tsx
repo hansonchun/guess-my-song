@@ -10,4 +10,5 @@ export interface GameSession {
     playlistName: string;
     status: string;
     currentSongToGuess: string;
+    addedSongs: string[]
   }

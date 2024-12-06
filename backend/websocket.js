@@ -21,9 +21,11 @@ module.exports = {
                             if (doc.exists) {
                                 const gameSession = doc.data();
                                 const allPlayersAddedSong = Object.values(gameSession.users || {}).every(user => user.addedTrackId);
+                                const allPlayersGuessed = Object.values(gameSession.users || {}).every(user => user.isGuessed);
 
                                 console.log(gameSession);
-                                console.log(allPlayersAddedSong);
+                                console.log('All players added song:', allPlayersAddedSong);
+                                console.log('All players guessed:', allPlayersGuessed);
 
                                 if (allPlayersAddedSong && gameSession.status === 'started') {
                                     gameSessionRef.update({
@@ -34,6 +36,19 @@ module.exports = {
                                             if (client.readyState === WebSocket.OPEN) {
                                                 client.send(JSON.stringify({
                                                     type: 'GUESSING_PHASE_STARTED',
+                                                    data: gameSession
+                                                }), { binary: false });
+                                            }
+                                        });
+                                    }).catch(console.error);
+                                } else if (allPlayersGuessed && gameSession.status === 'guessing') {
+                                    gameSessionRef.update({
+                                        status: 'complete'
+                                    }).then(() => {
+                                        wss.clients.forEach(client => {
+                                            if (client.readyState === WebSocket.OPEN) {
+                                                client.send(JSON.stringify({
+                                                    type: 'GAME_COMPLETED',
                                                     data: gameSession
                                                 }), { binary: false });
                                             }

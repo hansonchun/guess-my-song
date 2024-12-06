@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { useGameSession } from '../context/GameSessionContext';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@fluentui/react-components';
 import useGameSessionFetch from '../hooks/useGameSessionFetch';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import axios from 'axios';
+import useUserProfileFetch from '../hooks/useUserProfileFetch';
 
 const GuessPhase: React.FC = () => {
+    const navigate = useNavigate();
+    const { userProfile, fetchUserProfile } = useUserProfileFetch();
     const { gameSession, fetchGameSession, isLoading, error } = useGameSessionFetch();
     const { sessionId } = useParams<{ sessionId: string }>();
     const [songToGuess, setSongToGuess] = useState<string | null>(null);
@@ -16,19 +19,19 @@ const GuessPhase: React.FC = () => {
         if (sessionId) {
             fetchGameSession(sessionId);
         }
-    }, [sessionId, fetchGameSession]);
+        if (!userProfile) {
+            fetchUserProfile();
+        }
+    }, [sessionId, fetchGameSession, userProfile, fetchUserProfile]);
 
     useEffect(() => {
         let ws: WebSocket | null = null;
         if (gameSession) {
+            const port = 8080; 
+            const url = `ws://localhost:${port}`;
 
-            const port = 8080; // Assuming you have this in your .env file
-            const url = `ws://localhost:${port}`; // Adjust this to match your server setup
-            
-            // Create a new WebSocket connection
             ws = new WebSocket(url);
 
-            // Connection opened
             ws.onopen = () => {
                 console.log('WebSocket connected');
                 ws?.send(JSON.stringify({ type: 'LISTEN_FOR_GAME', data: { gameSessionId: gameSession.id } }));
@@ -38,7 +41,6 @@ const GuessPhase: React.FC = () => {
                 const message = JSON.parse(event.data);
                 console.log('Message from server:', message);
                 if (message.type === 'SESSION_UPDATE') {
-                    //setGameSession(message.data);
                     if (message.data.status === 'guessing') {
                         setSongToGuess(message.data.currentSongToGuess);
                         setIsWaiting(false);
@@ -46,6 +48,9 @@ const GuessPhase: React.FC = () => {
                         setIsWaiting(true);
                         setSongToGuess(null);
                     }
+                } else if (message.type === 'GAME_COMPLETED') {
+                    // If the game is completed, navigate to the scoreboard immediately
+                    navigate(`/scoreboard/${gameSession?.id}`);
                 } else if (message.type === 'ERROR') {
                     console.error('WebSocket error:', message.message);
                 }
@@ -55,28 +60,47 @@ const GuessPhase: React.FC = () => {
 
             ws.onerror = (error) => {
                 console.error('WebSocket error:', error);
-                // Optionally, you can try to reconnect here or notify the user
+            };
+
+            return () => {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.close();
+                }
             };
         }
+    }, [gameSession, navigate]);
 
-        // Cleanup function to close WebSocket connection
-        return () => {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.close();
-            }
-        };
-    }, [gameSession, isLoading]);
-
-    const handleSubmitGuess = (event: React.FormEvent) => {
+    const handleSubmitGuess = async (event: React.FormEvent) => {
         event.preventDefault();
-        // Check if the guess matches the songToGuess
-        if (guess === songToGuess) {
-            setIsGuessCorrect(true);
-        } else {
-            setIsGuessCorrect(false);
+        try {
+            const guessResponse = await axios.post(`/api/game/${gameSession?.id}/guess`, {
+                userId: userProfile?.id,
+                guessSongId: guess
+            });
+
+            const { guessedCorrectly } = guessResponse.data;
+
+            setIsGuessCorrect(guessedCorrectly);
+
+            // No need for setTimeout and navigation here, as the WebSocket will handle the navigation
+        } catch (error) {
+            console.error('Error making guess:', error);
         }
     };
 
+    const renderSongOptions = useCallback(() => {
+        if (isLoading) return <p>Loading songs...</p>;
+        if (error) return <p>Error loading songs: {error}</p>;
+        if (gameSession?.addedSongs) {
+            return gameSession.addedSongs.map((song, index) => (
+                <div key={song} onClick={() => setGuess(song)}>
+                    {song}
+                </div>
+            ));
+        }
+        return null;
+    }, [gameSession, isLoading, error]);
+    
     return (
         <div>
             <h1>{isWaiting ? "Waiting for Others" : "Guess Phase"}</h1>
@@ -84,6 +108,7 @@ const GuessPhase: React.FC = () => {
                 <p>Waiting for all players to pick their song...</p>
             ) : (
                 <>
+                    {renderSongOptions()}
                     <form onSubmit={handleSubmitGuess}>
                         <input 
                             type="text" 

@@ -4,11 +4,11 @@ import { SpotifyTrack } from '../models/SpotifyTrack';
 import { Button } from '@fluentui/react-components';
 import { useNavigate, useParams } from 'react-router-dom';
 import useGameSessionFetch from '../hooks/useGameSessionFetch'; // Adjust the path as necessary
-import { useUserProfile } from '../context/UserProfileContext';
+import useUserProfileFetch from '../hooks/useUserProfileFetch';
 
 const SongSelection: React.FC = () => {
     const navigate = useNavigate();
-    const { userProfile } = useUserProfile();
+    const { userProfile, fetchUserProfile } = useUserProfileFetch();
     const { sessionId } = useParams<{ sessionId: string }>(); // Assuming you're using route parameters for session ID
     const { gameSession, fetchGameSession, isLoading, error } = useGameSessionFetch();
     const [searchTerm, setSearchTerm] = useState<string>('');
@@ -19,7 +19,10 @@ const SongSelection: React.FC = () => {
         if (sessionId) {
             fetchGameSession(sessionId);
         }
-    }, [sessionId, fetchGameSession]);
+        if (!userProfile) {
+            fetchUserProfile();
+        }
+    }, [sessionId, fetchGameSession, userProfile, fetchUserProfile]);
 
     const handleSearch = async (event: ChangeEvent<HTMLInputElement>) => {
         const term = event.target.value;

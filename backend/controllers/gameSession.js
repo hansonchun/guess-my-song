@@ -16,6 +16,7 @@ const gameSessionController = {
                         joinedAt: admin.firestore.FieldValue.serverTimestamp(),
                         score: 0,
                         addedTrackId: '',
+                        isGuessed: false
                     }
                 },
                 createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -25,7 +26,7 @@ const gameSessionController = {
             })
 
             const gameSessionId = gameSessionRef.id;
-            const inviteLink = `join-game/${gameSessionId}`;
+            const inviteLink = `${process.env.FRONTEND_URL}/join-game/${gameSessionId}`;
 
             await gameSessionRef.update({ inviteLink: inviteLink });
 
@@ -53,50 +54,37 @@ const gameSessionController = {
     },
     joinGameSession: async (req, res) => {
         const { sessionId } = req.params;
-        const { userId } = req.query;
+        const { userId } = req.body; // Assume userId is sent from the client after authentication
 
         try {
             const gameSessionRef = db.collection('gameSessions').doc(sessionId);
-            const userRef = db.collection('users').doc(userId);
+            const gameSessionDoc = await gameSessionRef.get();
 
-            // Check if both game session and user exist
-            const [gameSessionSnap, userSnap] = await Promise.all([
-                gameSessionRef.get(),
-                userRef.get()
-            ]);
-
-            if (!gameSessionSnap.exists) {
+            if (!gameSessionDoc.exists) {
                 return res.status(404).json({ error: 'Game session not found' });
             }
 
-            if (!userSnap.exists) {
-                // Optionally create a user document if it doesn't exist
-                await userRef.set({ gameSessions: [] });
+            const gameSession = gameSessionDoc.data();
+
+            // Check if the game is in a joinable state (e.g., not started or completed)
+            if (gameSession.status !== 'waiting') {
+                return res.status(400).json({ error: 'This game has already started or ended' });
             }
 
-            // Check game status
-            if (gameSessionSnap.data().status !== 'waiting') {
-                return res.status(400).json({ error: 'Game has already started or is not joinable' });
-            }
-
-            // Add user to game session
+            // Add or update the user in the game session
             await gameSessionRef.update({
-                users: {
-                    [userId]: {
-                        joinedAt: admin.firestore.FieldValue.serverTimestamp()
-                    }
+                ['users.' + userId]: {
+                    id: userId,
+                    score: 0,
+                    isGuessed: false,
+                    addedTrackId: null // Assuming this is set when they choose a song
                 }
             }, { merge: true });
 
-            // Add game session to user's list of sessions
-            await userRef.update({
-                gameSessions: admin.firestore.FieldValue.arrayUnion(sessionId)
-            });
-
-            res.json({ message: 'Successfully joined the game', sessionId: gameSessionSnap.id });
+            res.status(200).json({ message: 'Joined game session successfully' });
         } catch (error) {
-            console.error('Error joining game:', error);
-            res.status(500).json({ error: 'Failed to join game' });
+            console.error('Error joining game session:', error);
+            res.status(500).json({ error: 'Failed to join game session' });
         }
     },
     fetchGameSession: async (req, res) => {

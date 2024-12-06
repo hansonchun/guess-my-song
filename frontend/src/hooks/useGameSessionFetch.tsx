@@ -14,7 +14,7 @@ const useGameSessionFetch = () => {
         try {
             const response = await axios.get(`/api/game-sessions/${sessionId}`);
 
-            const { createdAt, hostId, inviteLink, playlistId, playlistName, status, users, currentSongToGuess } = response.data;
+            const { createdAt, hostId, inviteLink, playlistId, playlistName, status, users, currentSongToGuess, addedSongs } = response.data;
 
             // Fetch user profiles for each user ID
             const gameUsers = await Promise.all(Object.entries(users).map(async ([userId, user]) => {
@@ -48,6 +48,7 @@ const useGameSessionFetch = () => {
                 playlistName,
                 status,
                 currentSongToGuess,
+                addedSongs
             };
             setGameSession(session);
 
